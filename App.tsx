@@ -19,7 +19,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-//import { ProjectProvider, useProjectSystem } from './store/ProjectStore';
+import { ProjectProvider, useProjectSystem } from './store/ProjectStore';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { TaskTable } from './components/TaskTable';
