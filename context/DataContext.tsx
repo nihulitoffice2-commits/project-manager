@@ -10,7 +10,8 @@ import {
   updateDoc, 
   doc, 
   query, 
-  where
+  where,
+  arrayUnion
 } from 'firebase/firestore';
 
 interface DataContextType {
@@ -43,6 +44,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const projectsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
       setProjects(projectsData);
       setLoading(false);
+    }, (error) => {
+      console.error("Projects snapshot error:", error);
     });
     return () => unsubscribe();
   }, []);
@@ -72,11 +75,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const addProject = async (p: Partial<Project>) => {
-    await addDoc(collection(db, 'projects'), {
+    if (!currentUser) return;
+
+    // 1. Create the project
+    const docRef = await addDoc(collection(db, 'projects'), {
       ...p,
       isDeleted: false,
       paidAmount: 0,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      creatorId: currentUser.id
+    });
+
+    // 2. Add the project ID to user's accessible projects
+    const userRef = doc(db, 'users', currentUser.id);
+    await updateDoc(userRef, {
+      accessibleProjects: arrayUnion(docRef.id)
     });
   };
 
@@ -111,7 +124,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
-  // Fix for the "Cannot read properties of undefined (reading 'includes')" error
   const visibleProjects = useMemo(() => {
     if (!currentUser) return [];
     if (isSysAdmin) return projects;
@@ -141,6 +153,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 export const useData = () => {
   const context = useContext(DataContext);
-  if (!context) throw new Error('useData must be used within an AuthProvider');
+  if (!context) throw new Error('useData must be used within an DataProvider');
   return context;
 };
