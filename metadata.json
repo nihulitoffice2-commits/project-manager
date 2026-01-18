@@ -1,7 +1,0 @@
-{
-  "name": "NGO Campaign Manager",
-  "description": "Professional project management system for non-profit organizations, featuring real-time synchronization, Gantt charts, financial tracking, and advanced task scheduling.",
-  "requestFramePermissions": [
-    "camera"
-  ]
-}
