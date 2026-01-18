@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { Project, Task, Transaction, Contact } from '../types';
 import { useAuth } from './AuthContext';
 import { db } from '../services/firebase';
@@ -8,11 +8,9 @@ import {
   onSnapshot, 
   addDoc, 
   updateDoc, 
-  deleteDoc, 
   doc, 
   query, 
-  where,
-  setDoc
+  where
 } from 'firebase/firestore';
 
 interface DataContextType {
@@ -113,9 +111,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
-  const visibleProjects = isSysAdmin 
-    ? projects
-    : projects.filter(p => currentUser?.accessibleProjects.includes(p.id));
+  // Fix for the "Cannot read properties of undefined (reading 'includes')" error
+  const visibleProjects = useMemo(() => {
+    if (!currentUser) return [];
+    if (isSysAdmin) return projects;
+    
+    const accessibleIds = currentUser.accessibleProjects || [];
+    return projects.filter(p => accessibleIds.includes(p.id));
+  }, [projects, currentUser, isSysAdmin]);
 
   return (
     <DataContext.Provider value={{ 
