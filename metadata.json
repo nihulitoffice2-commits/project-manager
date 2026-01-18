@@ -1,0 +1,7 @@
+{
+  "name": "CampaignFlow ERP",
+  "description": "מערכת ניהול פרויקטים וקמפיינים לעמותות וחברות ניהול בעיצוב מודרני ותמיכה מלאה בעברית.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
