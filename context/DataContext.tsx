@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { Project, Task, Transaction, Contact } from '../types';
 import { useAuth } from './AuthContext';
@@ -46,6 +45,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setLoading(false);
     }, (error) => {
       console.error("Projects snapshot error:", error);
+      setLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -126,8 +126,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const visibleProjects = useMemo(() => {
     if (!currentUser) return [];
+    
+    // If Admin, show everything
     if (isSysAdmin) return projects;
     
+    // If not Admin, filter by accessibleProjects list
     const accessibleIds = currentUser.accessibleProjects || [];
     return projects.filter(p => accessibleIds.includes(p.id));
   }, [projects, currentUser, isSysAdmin]);
