@@ -1,17 +1,17 @@
-
 import React from 'react';
 import { useData } from '../../context/DataContext';
 import KpiCard from './KpiCard';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend 
 } from 'recharts';
-import { Clock, CheckCircle2, AlertTriangle, Briefcase } from 'lucide-react';
+import { Clock, CheckCircle2, AlertTriangle, Briefcase, LayoutGrid } from 'lucide-react';
 
 const MainDashboard: React.FC = () => {
   const { projects, tasks } = useData();
 
+  const totalProjectsCount = projects.length;
   const activeProjectsCount = projects.filter(p => p.status === 'פעיל').length;
-  const overdueTasks = tasks.filter(t => t.status !== 'הושלם' && new Date(t.dueDate) < new Date()).length;
+  const overdueTasks = tasks.filter(t => t.status !== 'הושלם' && t.dueDate && new Date(t.dueDate) < new Date()).length;
   const redFlags = tasks.filter(t => t.isRedFlag).length;
   const completedTasks = tasks.filter(t => t.status === 'הושלם').length;
 
@@ -25,15 +25,16 @@ const MainDashboard: React.FC = () => {
   const pieData = [
     { name: 'פעיל', value: activeProjectsCount },
     { name: 'הושלם', value: projects.filter(p => p.status === 'הושלם').length },
-    { name: 'בתכנון', value: projects.filter(p => p.status === 'בתכנון').length },
-  ];
+    { name: 'בתכנון', value: projects.filter(p => p.status === 'בתכנון').length || projects.filter(p => p.status === 'בתכנון').length },
+    { name: 'אחר', value: projects.filter(p => p.status !== 'פעיל' && p.status !== 'הושלם' && p.status !== 'בתכנון').length }
+  ].filter(d => d.value > 0);
 
-  const PIE_COLORS = ['#3b82f6', '#22c55e', '#a855f7'];
+  const PIE_COLORS = ['#3b82f6', '#22c55e', '#a855f7', '#94a3b8'];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <KpiCard title="פרויקטים פעילים" value={activeProjectsCount} icon={<Briefcase size={28} />} color="bg-blue-600" />
+        <KpiCard title="סה״כ פרויקטים" value={totalProjectsCount} icon={<LayoutGrid size={28} />} color="bg-indigo-600" />
         <KpiCard title="משימות באיחור" value={overdueTasks} icon={<Clock size={28} />} color="bg-red-500" />
         <KpiCard title="תקלות קריטיות (🚩)" value={redFlags} icon={<AlertTriangle size={28} />} color="bg-orange-500" />
         <KpiCard title="משימות שהושלמו" value={completedTasks} icon={<CheckCircle2 size={28} />} color="bg-green-500" />
@@ -59,25 +60,29 @@ const MainDashboard: React.FC = () => {
         <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
           <h3 className="text-xl font-bold mb-6 text-slate-800">סטטוס פרויקטים</h3>
           <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend iconType="circle" layout="vertical" align="right" verticalAlign="middle" />
-              </PieChart>
-            </ResponsiveContainer>
+            {pieData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend iconType="circle" layout="vertical" align="right" verticalAlign="middle" />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-300 font-bold">אין נתוני פרויקטים</div>
+            )}
           </div>
         </div>
       </div>
@@ -85,7 +90,9 @@ const MainDashboard: React.FC = () => {
       <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
         <h3 className="text-xl font-bold mb-6 text-slate-800">משימות דחופות ותקלות (🚩)</h3>
         <div className="space-y-4">
-          {tasks.filter(t => t.isRedFlag || t.priority === 'דחוף').map(task => (
+          {tasks.filter(t => t.isRedFlag || t.priority === 'דחוף').length === 0 ? (
+             <div className="p-8 text-center text-slate-400 font-medium">אין משימות דחופות כרגע</div>
+          ) : tasks.filter(t => t.isRedFlag || t.priority === 'דחוף').map(task => (
             <div key={task.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border-r-4 border-red-500">
               <div className="flex items-center gap-4">
                 {task.isRedFlag ? <AlertTriangle className="text-red-500" size={20} /> : <Clock className="text-orange-500" size={20} />}
