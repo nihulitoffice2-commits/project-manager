@@ -1,9 +1,8 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '../types';
 import { auth, db } from '../services/firebase';
 import { onAuthStateChanged, signInAnonymously, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -22,40 +21,58 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+    let userUnsubscribe: (() => void) | null = null;
+
+    const authUnsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      // Clean up previous user listener if exists
+      if (userUnsubscribe) {
+        userUnsubscribe();
+        userUnsubscribe = null;
+      }
+
       try {
         setError(null);
         if (fbUser) {
           const userDocRef = doc(db, 'users', fbUser.uid);
-          const userDoc = await getDoc(userDocRef);
           
-          if (userDoc.exists()) {
-            setCurrentUser({ id: fbUser.uid, ...userDoc.data() } as User);
-          } else {
-            // Create user document if it doesn't exist
-            const newUser: User = {
-              id: fbUser.uid,
-              name: fbUser.displayName || 'מנהל מערכת',
-              email: fbUser.email || '',
-              role: UserRole.SYS_ADMIN,
-              accessibleProjects: [],
-              photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(fbUser.displayName || 'Admin')}&background=random`
-            };
-            await setDoc(userDocRef, newUser);
-            setCurrentUser(newUser);
-          }
+          // Start listening to the user document
+          userUnsubscribe = onSnapshot(userDocRef, async (snapshot) => {
+            if (snapshot.exists()) {
+              setCurrentUser({ id: fbUser.uid, ...snapshot.data() } as User);
+              setLoading(false);
+            } else {
+              // Create default user if doc doesn't exist
+              const newUser: User = {
+                id: fbUser.uid,
+                name: fbUser.displayName || 'מנהל מערכת',
+                email: fbUser.email || '',
+                role: UserRole.SYS_ADMIN,
+                accessibleProjects: [],
+                photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(fbUser.displayName || 'Admin')}&background=random`
+              };
+              await setDoc(userDocRef, newUser);
+              // The snapshot listener will trigger again with the new data
+            }
+          }, (err) => {
+            console.error("User doc listener error:", err);
+            setError("שגיאה בטעינת נתוני משתמש.");
+            setLoading(false);
+          });
         } else {
           setCurrentUser(null);
+          setLoading(false);
         }
       } catch (err: any) {
-        console.error("Auth error:", err);
-        setError(err.message || "תקלה בסנכרון המשתמש");
-      } finally {
+        console.error("Auth sync error:", err);
+        setError("תקלה בתקשורת עם השרת.");
         setLoading(false);
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      authUnsubscribe();
+      if (userUnsubscribe) userUnsubscribe();
+    };
   }, []);
 
   const login = async () => {
@@ -65,7 +82,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       await signInAnonymously(auth);
     } catch (err: any) {
       console.error("Login failed:", err);
-      setError("לא ניתן להתחבר אנונימית. ודא ש-Anonymous Auth מופעל ב-Firebase.");
+      setError("שגיאת התחברות. וודא ש-Anonymous Auth מופעל ב-Firebase Console.");
       setLoading(false);
     }
   };
