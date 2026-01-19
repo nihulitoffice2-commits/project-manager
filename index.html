@@ -9,8 +9,32 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="index.css">
-    <script type="importmap">
+    <style>
+      body {
+        font-family: 'Assistant', sans-serif;
+        background-color: #f8fafc;
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #e2e8f0;
+        border-radius: 10px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #cbd5e1;
+      }
+    </style>
+  <script type="importmap">
 {
   "imports": {
     "date-fns": "https://esm.sh/date-fns@^4.1.0",
@@ -19,15 +43,17 @@
     "recharts": "https://esm.sh/recharts@^3.6.0",
     "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "firebase/app": "https://esm.sh/firebase@11.3.1/app",
-    "firebase/firestore": "https://esm.sh/firebase@11.3.1/firestore",
-    "firebase/auth": "https://esm.sh/firebase@11.3.1/auth",
+    "firebase/app": "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/11.3.1/firebase-firestore.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/11.3.1/firebase-auth.js",
     "firebase/": "https://esm.sh/firebase@^12.8.0/"
   }
 }
 </script>
-  </head>
+<link rel="stylesheet" href="/index.css">
+</head>
   <body>
     <div id="root"></div>
-  </body>
+  <script type="module" src="/index.tsx"></script>
+</body>
 </html>
