@@ -1,13 +1,14 @@
-
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
-import { Phone, Mail, User, ShieldCheck, Search } from 'lucide-react';
+import { Phone, Mail, User, ShieldCheck, Search, Edit2 } from 'lucide-react';
+import { Contact } from '../../types';
 import Modal from '../UI/Modal';
 import ContactForm from '../Forms/ContactForm';
 
 const ContactHub: React.FC = () => {
   const { contacts, projects } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const getProjectName = (id: string) => projects.find(p => p.id === id)?.name || 'פרויקט הוסר';
@@ -17,6 +18,16 @@ const ContactHub: React.FC = () => {
     contact.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
     contact.phone.includes(searchTerm)
   );
+
+  const handleEdit = (contact: Contact) => {
+    setEditingContact(contact);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingContact(null);
+  };
 
   return (
     <div className="space-y-8">
@@ -44,8 +55,15 @@ const ContactHub: React.FC = () => {
         />
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="הוספת איש קשר חדש">
-        <ContactForm onSuccess={() => setIsModalOpen(false)} />
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={handleCloseModal} 
+        title={editingContact ? `עריכת איש קשר: ${editingContact.name}` : "הוספת איש קשר חדש"}
+      >
+        <ContactForm 
+          onSuccess={handleCloseModal} 
+          initialData={editingContact || undefined} 
+        />
       </Modal>
 
       {filteredContacts.length === 0 ? (
@@ -55,7 +73,15 @@ const ContactHub: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredContacts.map(contact => (
-            <div key={contact.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6 flex flex-col hover:shadow-xl transition-all group">
+            <div key={contact.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6 flex flex-col hover:shadow-xl transition-all group relative">
+              <button 
+                onClick={() => handleEdit(contact)}
+                className="absolute left-6 top-6 p-2 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                title="ערוך איש קשר"
+              >
+                <Edit2 size={16} />
+              </button>
+
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 rounded-3xl bg-blue-50 flex items-center justify-center text-blue-600 shadow-inner group-hover:bg-blue-600 group-hover:text-white transition-all">
                   <User size={28} />
