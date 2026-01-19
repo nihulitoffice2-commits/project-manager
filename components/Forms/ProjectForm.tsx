@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ProjectStatus } from '../../types';
 import { useData } from '../../context/DataContext';
@@ -8,7 +7,7 @@ interface ProjectFormProps {
 }
 
 const ProjectForm: React.FC<ProjectFormProps> = ({ onSuccess }) => {
-  const { addProject } = useData();
+  const { addProject, addContact } = useData();
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -24,7 +23,21 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ onSuccess }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await addProject(formData);
+    
+    // 1. Add the project and get the ID
+    const newProjectId = await addProject(formData);
+    
+    // 2. Auto-add manager to contacts (CRM) if name is provided
+    if (formData.managerName && (formData.managerPhone || formData.managerEmail)) {
+      await addContact({
+        name: formData.managerName,
+        phone: formData.managerPhone,
+        email: formData.managerEmail,
+        role: `מנהל פרויקט: ${formData.name}`,
+        associatedProjects: [newProjectId] // Link the newly created project
+      });
+    }
+
     onSuccess();
   };
 
@@ -74,7 +87,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ onSuccess }) => {
       </div>
 
       <div className="space-y-2 border-t border-slate-50 pt-6">
-        <h4 className="text-sm font-bold text-slate-700 mb-4">פרטי קשר (מנהל עמותה)</h4>
+        <div className="flex justify-between items-end mb-4">
+          <h4 className="text-sm font-bold text-slate-700">פרטי קשר (מנהל עמותה)</h4>
+          <span className="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-lg uppercase">מתווסף אוטומטית ל-CRM</span>
+        </div>
         <div className="grid grid-cols-3 gap-4">
           <input 
             placeholder="שם מלא"
@@ -84,13 +100,15 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ onSuccess }) => {
           />
           <input 
             placeholder="טלפון"
-            className="bg-slate-50 border-none rounded-xl p-3 text-sm"
+            className="bg-slate-50 border-none rounded-xl p-3 text-sm text-left"
+            dir="ltr"
             value={formData.managerPhone}
             onChange={e => setFormData({...formData, managerPhone: e.target.value})}
           />
           <input 
             placeholder="אימייל"
-            className="bg-slate-50 border-none rounded-xl p-3 text-sm"
+            className="bg-slate-50 border-none rounded-xl p-3 text-sm text-left"
+            dir="ltr"
             value={formData.managerEmail}
             onChange={e => setFormData({...formData, managerEmail: e.target.value})}
           />
