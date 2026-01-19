@@ -1,13 +1,14 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
+import { Contact } from '../../types';
 
 interface ContactFormProps {
   onSuccess: () => void;
+  initialData?: Contact;
 }
 
-const ContactForm: React.FC<ContactFormProps> = ({ onSuccess }) => {
-  const { projects, addContact } = useData();
+const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, initialData }) => {
+  const { projects, addContact, updateContact } = useData();
   const [formData, setFormData] = useState({
     name: '',
     role: '',
@@ -16,9 +17,25 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess }) => {
     associatedProjects: [] as string[]
   });
 
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        name: initialData.name || '',
+        role: initialData.role || '',
+        phone: initialData.phone || '',
+        email: initialData.email || '',
+        associatedProjects: initialData.associatedProjects || []
+      });
+    }
+  }, [initialData]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await addContact(formData);
+    if (initialData) {
+      await updateContact(initialData.id, formData);
+    } else {
+      await addContact(formData);
+    }
     onSuccess();
   };
 
@@ -102,7 +119,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess }) => {
       </div>
 
       <button className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all mt-4">
-        שמור איש קשר
+        {initialData ? 'עדכן איש קשר' : 'שמור איש קשר'}
       </button>
     </form>
   );
