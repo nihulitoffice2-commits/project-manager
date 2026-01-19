@@ -18,12 +18,13 @@ interface DataContextType {
   tasks: Task[];
   transactions: Transaction[];
   contacts: Contact[];
-  addProject: (p: Partial<Project>) => Promise<void>;
+  addProject: (p: Partial<Project>) => Promise<string>;
   addTask: (t: Partial<Task>) => Promise<void>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
   addTransaction: (t: Partial<Transaction>) => Promise<void>;
   addContact: (c: Partial<Contact>) => Promise<void>;
+  updateContact: (contactId: string, updates: Partial<Contact>) => Promise<void>;
   loading: boolean;
 }
 
@@ -74,10 +75,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => unsubscribe();
   }, []);
 
-  const addProject = async (p: Partial<Project>) => {
-    if (!currentUser) return;
+  const addProject = async (p: Partial<Project>): Promise<string> => {
+    if (!currentUser) return '';
 
-    // 1. Create the project
     const docRef = await addDoc(collection(db, 'projects'), {
       ...p,
       isDeleted: false,
@@ -86,11 +86,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       creatorId: currentUser.id
     });
 
-    // 2. Add the project ID to user's accessible projects
     const userRef = doc(db, 'users', currentUser.id);
     await updateDoc(userRef, {
       accessibleProjects: arrayUnion(docRef.id)
     });
+
+    return docRef.id;
   };
 
   const addTask = async (t: Partial<Task>) => {
@@ -124,13 +125,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
+  const updateContact = async (contactId: string, updates: Partial<Contact>) => {
+    const contactRef = doc(db, 'contacts', contactId);
+    await updateDoc(contactRef, updates);
+  };
+
   const visibleProjects = useMemo(() => {
     if (!currentUser) return [];
-    
-    // If Admin, show everything
     if (isSysAdmin) return projects;
-    
-    // If not Admin, filter by accessibleProjects list
     const accessibleIds = currentUser.accessibleProjects || [];
     return projects.filter(p => accessibleIds.includes(p.id));
   }, [projects, currentUser, isSysAdmin]);
@@ -147,6 +149,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       deleteProject,
       addTransaction,
       addContact,
+      updateContact,
       loading 
     }}>
       {children}
